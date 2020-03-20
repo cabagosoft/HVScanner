@@ -9,7 +9,7 @@ const App: () => React$Node = () => {
   return (
     <>
       <StatusBar barStyle="dark-content" />
-      
+      <Text>HOLA</Text>
     </>
   );
 };
