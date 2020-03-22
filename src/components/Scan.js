@@ -1,14 +1,8 @@
 import React, { Component, Fragment } from 'react';
 import QRCodeScanner from 'react-native-qrcode-scanner';
-import {
-    TouchableOpacity,
-    Text,
-    StatusBar,
-    Linking,
-    View,
-    StyleSheet,
-    Button
-} from 'react-native';
+import firebase from 'react-native-firebase';
+import { Text, StatusBar, Linking, View, StyleSheet, Button, ToastAndroid, Modal, TouchableHighlight, Alert} from 'react-native';
+import { Input } from 'react-native-elements';
 
 class Scan extends Component {
     constructor(props) {
@@ -16,8 +10,17 @@ class Scan extends Component {
         this.state = {
             scan: false,
             ScanResult: false,
-            result: null
+            result: null,
+            modalVisible: false,
+            machine:'',
+            fixed_asset: ''
         };
+    }
+
+    ref = firebase.firestore().collection('Maquinas')
+
+    setModalVisible(visible) {
+        this.setState({modalVisible: visible});
     }
 
     onSuccess = (e) => {
@@ -56,6 +59,15 @@ class Scan extends Component {
             ScanResult: false
         })
     }
+
+    saveMachine = () => {
+        this.ref.add({
+        machine: this.state.result.data,
+        name: this.state.name
+        })
+        .then(ToastAndroid.show('Máquina creada correctamente', ToastAndroid.LONG))
+    }
+
     render() {
         const { scan, ScanResult, result } = this.state
         return (
@@ -64,9 +76,10 @@ class Scan extends Component {
                     <StatusBar barStyle="dark-content" />
                     {!scan && !ScanResult &&
                         <View style={styles.cardView} >
-                            <Text style={styles.descText}>Escanea el QR para crear ó consultar máquinas</Text>
+                            <Text style={styles.descText}>Escanea el código QR para crear ó consultar máquinas</Text>
 
                             <Button
+                                style={styles.buttonScan}
                                 title="Escanear QR"
                                 onPress={this.activeQR}
                             />
@@ -76,18 +89,71 @@ class Scan extends Component {
 
                     {ScanResult &&
                         <Fragment>
-                            <Text style={styles.textTitle1}>Result !</Text>
-                            <View style={ScanResult ? styles.scanCardView : styles.cardView}>
-                                <Text>Type : {result.type}</Text>
-                                <Text>Result : {result.data}</Text>
-                                <Text numberOfLines={1}>RawData: {result.rawData}</Text>
-                                
-                            
+                            <Text style={styles.textTitle1}>{result.data}</Text>
+                             <Modal
+                                animationType="slide"
+                                transparent={false}
+                                visible={this.state.modalVisible}
+                                onRequestClose={() => {
+                                    Alert.alert('Modal has been closed.');
+                                }}>
+                                <View style={{marginTop: 22}}>
+                                    <View>
+                                        <Text style={styles.textTitle1}>{result.data}</Text>
+
+                                        <Input
+                                            name="fixed_asset"
+                                            label="Activo Fijo"
+                                            value={this.state.fixed_asset}
+                                            onChangeText={(fixed_asset) => this.setState({fixed_asset})}
+                                        />
+                                        <Input
+                                            name="name"
+                                            label="Nombre"
+                                            placeholder="Nombre"
+                                            value={this.state.name}
+                                            onChangeText={(name) => this.setState({name})}
+                                        />
+                                        
+                                        <View style={styles.buttonCreate}>  
+                                            <Button
+                                                title="Guardar"
+                                                onPress={() => {this.saveMachine(), this.setModalVisible(!this.state.modalVisible)}}
+                                            />
+                                        </View>
+
+                                        <Button 
+                                            title="Cerrar"
+                                            onPress={() => {
+                                                this.setModalVisible(!this.state.modalVisible);
+                                            }}
+                                        />
+                                    </View>
+                                </View>
+                            </Modal>
+    
+                            <View style={styles.buttonCreate}>  
+                                <Button 
+                                    title="Crear Máquina"
+                                    onPress={() => {
+                                        this.setModalVisible(true);
+                                    }}
+                                />
                             </View>
-                            <Button
-                                title="Escanear de nuevo"
-                                onPress={this.scanAgain}
-                            />
+                           
+                            <View style={styles.buttonConsult}>
+                                <Button
+                                    title="Consultar Máquina"
+                                    onPress={this.scanAgain}
+                                />
+                            </View>
+                            <View style={styles.buttonScanNew}>
+                                <Button
+                                    title="Escanear de nuevo"
+                                    onPress={this.scanAgain}
+                                />
+                            </View>
+                           
                         </Fragment>
                     }
 
@@ -115,19 +181,34 @@ class Scan extends Component {
 }
 
 const styles = StyleSheet.create({
-   cardView: {
-     backgroundColor: 'black',
-     flex: 1,
-     borderRadius: 5,
-     padding: 10,
-     marginRight: 10,
-     marginTop: 17
-   },
-   buttonCancel: {
-       flex: 1,
-       marginTop:10,
-       width: '90'
-   }
+    cardView: {
+        margin: 30
+    },
+    descText: {
+        marginTop:30,
+        fontSize: 25,
+        marginBottom:80
+    },
+    textTitle1:{
+        margin:20,
+        fontSize:40,
+        textAlign: 'center'
+    },
+    buttonScanNew: {
+        marginLeft: 20,
+        marginRight:20,
+        marginBottom:20
+    },
+    buttonCreate: {
+        marginLeft: 20,
+        marginRight:20,
+        marginBottom:20
+    },
+    buttonConsult: {
+        marginLeft: 20,
+        marginRight:20,
+        marginBottom:20
+    },
 });
 
 
